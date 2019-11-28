@@ -69,7 +69,7 @@ def main(args):
 		showInfo("Targeting {}:{}".format(host, port))
 		for password in args.passwords:
 			if status:
-				showSuccess("Successfully made the their MySQL to OurSQL!")
+				showSuccess("Successfully made their MySQL to OurSQL!")
 				exitScript()
 			th = Thread(target=connect, args=(host, user, password, port))
 			th.daemon = True
