@@ -56,7 +56,7 @@ def connect(host, user, password, port):
 		status = True
 	except Exception as e:
 		errno, message = e.args
-		if errno == 2013:
+		if errno == 2013 or errno == 2002:
 			honeypot = True
 		if errno == 1130:
 			allowed = False
