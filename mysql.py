@@ -19,7 +19,7 @@ unknown = False
 
 # Get version.
 def getVersion():
-	return "1.0"
+	return "1.1"
 
 # Get current time.
 def curTime():
@@ -123,16 +123,17 @@ def main(args, users, hosts):
 				showInfo("Targeting user {}".format(user))
 				if verbose:
 					showVerbose("Using {} connection threads".format(max_threads))
-				for password in args.passwords:
-					if success:
-						break
-					th = Thread(target=connect, args=(host, user, password, port, timeout))
-					th.daemon = True
-					th.start()
-					while activeCount() > max_threads:
+				with open(args.passwords) as file:
+					for password in file:
+						if success:
+							break
+						th = Thread(target=connect, args=(host, user, password.strip(), port, timeout))
+						th.daemon = True
+						th.start()
+						while activeCount() > max_threads:
+							sleep(0.001)
+					while activeCount() > 1:
 						sleep(0.001)
-				while activeCount() > 1:
-					sleep(0.001)
 				if success:
 					success = False
 				else:
@@ -150,7 +151,7 @@ if __name__ == "__main__":
 		args.add_argument("--hosts", dest="hosts", type=lambda x:file_exists(args, x), help="the list of domains or IP Addresses to be brute-force")
 		args.add_argument("-u", "--user", dest="user", type=str, default="root", help="the user to be used during brute-force (default: root)")
 		args.add_argument("-U", "--users", dest="users", type=lambda x:file_exists(args, x), help="the list of users to be used during brute-force")
-		args.add_argument("-p", "--passwords", dest="passwords", type=lambda x:file_exists(args, x), required=True, help="file containing passwords dictionary")
+		args.add_argument("-p", "--passwords", dest="passwords", type=str, required=True, help="file containing passwords dictionary")
 		args.add_argument("-P", "--port", dest="port", type=int, default=3306, help="the server MySQL port (default: 3306)")
 		args.add_argument("-t", "--threads", dest="threads", type=int, default=4, help="number of connection threads (default: 4)")
 		args.add_argument("-T", "--timeout", dest="timeout", type=int, default=3, help="total of seconds to connection timeout (default: 3)")
