@@ -1,6 +1,4 @@
 #!/usr/bin/env python3
-# By Aqhmal (https://github.com/aqhmal)
-
 import sys
 import argparse
 import MySQLdb
